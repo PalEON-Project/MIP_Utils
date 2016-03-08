@@ -1,8 +1,7 @@
 # Doing some EDA to make sure the ED runs are at least somewhat on par with others
-# Note: because there are some temporal scale mismatches, this script only goes model-by-model
 library(ncdf4)
 library(car)
-setwd("~/Desktop/Dropbox//PalEON CR/PalEON_MIP_Site/")
+setwd("~/Desktop/Research/PalEON_CR/PalEON_MIP_Site/")
 
 # ------------------------------------------------
 # Setting up to compare the inital data from the models
@@ -10,7 +9,7 @@ setwd("~/Desktop/Dropbox//PalEON CR/PalEON_MIP_Site/")
 model.dir <- "phase1a_model_output"
 #model.dir <- "phase1a_model_output/"
 
-#~/Desktop/PalEON CR/PalEON_MIP_Site/phase1a_model_output
+#~/Desktop/PalEON_CR/PalEON_MIP_Site/phase1a_model_output
 # Models for which we have data
 model.list <- dir(model.dir)
 model.list
@@ -26,14 +25,14 @@ mo2sec <- 1/(12*24*60*60)
 # Extracting Variables names to make life easier
 # ------------------------------------------------------------------------
 # Setting up directories to pull an example file
-dir.ed <- file.path(model.dir, "ED2.v6", site.list[1])
+dir.ed <- file.path(model.dir, "ED2.v7", site.list[1])
 files.ed <- dir(dir.ed)
 
-dir.ed.lu <- file.path(model.dir, "ED2-LU.v5", site.list[1])
+dir.ed.lu <- file.path(model.dir, "ED2-LU.v8", site.list[1])
 files.ed.lu <- dir(dir.ed.lu)
 
-dir.clm.bgc <- file.path(model.dir, "CLM-BGC.v4", site.list[1])
-dir.clm.cn <- file.path(model.dir, "CLM-CN.v2", site.list[1])
+dir.clm.bgc <- file.path(model.dir, "CLM45BGC.v5.1", paste0(site.list[1], ".CLM45BGC"))
+dir.clm.cn <- file.path(model.dir, "CLM45CN.v3.1", paste0(site.list[1], ".CLM45CN"))
 files.clm.bgc <- dir(dir.clm.bgc)
 files.clm.cn <- dir(dir.clm.cn)
 
@@ -191,7 +190,7 @@ nc_close(sib)
 ed <- list()
 ed.diversity <- list()
 for(s in 1:length(site.list)){
-  dir.ed <- file.path(model.dir, "ED2.v6", site.list[s])
+  dir.ed <- file.path(model.dir, "ED2.v7", site.list[s])
   files.ed <- dir(dir.ed)
   
   #  nee.temp <- npp.temp <- rh.temp <- ah.temp <- gpp.temp <- vector()
@@ -215,12 +214,26 @@ for(s in 1:length(site.list)){
       temp <- c(temp, ncvar_get(ncMT, ed.var[v])) }
       ed.var.list[[v]] <- temp
     }
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- ed.var.list[["Evergreen"]]
+	  decid <- ed.var.list[["Deciduous"]]
+	  grass <- ed.var.list[["Grass"]]
+    }
+
+    ed.var.list[["Evergreen"]] <- c(evg  , colSums(ncvar_get(ncMT, "Fcomp")[6:8 ,]))
+    ed.var.list[["Deciduous"]] <- c(decid, colSums(ncvar_get(ncMT, "Fcomp")[9:11,]))
+    ed.var.list[["Grass"    ]] <- c(grass, colSums(ncvar_get(ncMT, "Fcomp")[c(1,5,12:16),]))
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(ed.var.list) <- ed.var
+  names(ed.var.list) <- c(ed.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(ed.var)){
+  for(v in 1:(length(ed.var)+3)){
     if(s == 1){
       ed[[v]] <- data.frame(ed.var.list[[v]]) 
     } else {
@@ -229,8 +242,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(ed) <- c(ed.var)
-for(i in 1:length(ed.var)){
+names(ed) <- c(ed.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(ed)){
   names(ed[[i]]) <- site.list
 }
 # -----------------------------------
@@ -242,7 +255,7 @@ for(i in 1:length(ed.var)){
 ed.lu <- list()
 ed.lu.diversity <- list()
 for(s in 1:length(site.list)){
-  dir.ed.lu <- file.path(model.dir, "ED2-LU.v5", site.list[s])
+  dir.ed.lu <- file.path(model.dir, "ED2-LU.v8", site.list[s])
   files.ed.lu <- dir(dir.ed.lu)
   
   #  nee.temp <- npp.temp <- rh.temp <- ah.temp <- gpp.temp <- vector()
@@ -266,12 +279,27 @@ for(s in 1:length(site.list)){
       temp <- c(temp, ncvar_get(ncMT, ed.lu.var[v])) }
       ed.lu.var.list[[v]] <- temp
     }
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- ed.lu.var.list[["Evergreen"]]
+	  decid <- ed.lu.var.list[["Deciduous"]]
+	  grass <- ed.lu.var.list[["Grass"]]
+    }
+
+    ed.lu.var.list[["Evergreen"]] <- c(evg  , colSums(ncvar_get(ncMT, "Fcomp")[6:8 ,]))
+    ed.lu.var.list[["Deciduous"]] <- c(decid, colSums(ncvar_get(ncMT, "Fcomp")[9:11,]))
+    ed.lu.var.list[["Grass"    ]] <- c(grass, colSums(ncvar_get(ncMT, "Fcomp")[c(1,5,12:16),]))
+    # ----------------------
+
     nc_close(ncMT)      
   }
-  names(ed.lu.var.list) <- ed.lu.var
+  names(ed.lu.var.list) <- c(ed.lu.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(ed.lu.var)){
+  for(v in 1:length(ed.lu.var.list)){
     if(s == 1){
       ed.lu[[v]] <- data.frame(ed.lu.var.list[[v]]) 
     } else {
@@ -280,8 +308,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(ed.lu) <- c(ed.lu.var)
-for(i in 1:length(ed.lu.var)){
+names(ed.lu) <- c(ed.lu.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(ed.lu)){
   names(ed.lu[[i]]) <- site.list
 } 
 # -----------------------------------
@@ -292,7 +320,7 @@ for(i in 1:length(ed.lu.var)){
 # -----------------------------------
 clm.bgc <- list() 
 for(s in 1:length(site.list)){
-  dir.clm.bgc <- file.path(model.dir, "CLM-BGC.v4", site.list[s])
+  dir.clm.bgc <- file.path(model.dir, "CLM45BGC.v5.1", paste0(site.list[s], ".CLM45BGC"))
   # dir.clm.bgc <- file.path(model.dir, "CLM45.v3", site.list[s])
   files.clm.bgc <- dir(dir.clm.bgc)
   clm.bgc.var.list <- list()
@@ -314,12 +342,26 @@ for(s in 1:length(site.list)){
         temp <- c(temp, ncvar_get(ncMT, clm.bgc.var[v]))  }
       clm.bgc.var.list[[v]] <- temp
     }    
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- clm.bgc.var.list[["Evergreen"]]
+	  decid <- clm.bgc.var.list[["Deciduous"]]
+	  grass <- clm.bgc.var.list[["Grass"]]
+    }
+
+    clm.bgc.var.list[["Evergreen"]] <- c(evg  , rowSums(ncvar_get(ncMT, "Fcomp")[,c(2:3, 5:6)]))
+    clm.bgc.var.list[["Deciduous"]] <- c(decid, rowSums(ncvar_get(ncMT, "Fcomp")[,c(4,7:9)]))
+    clm.bgc.var.list[["Grass"    ]] <- c(grass, rowSums(ncvar_get(ncMT, "Fcomp")[,c(13:17)]))
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(clm.bgc.var.list) <- clm.bgc.var
+  names(clm.bgc.var.list) <- c(clm.bgc.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(clm.bgc.var)){
+  for(v in 1:length(clm.bgc.var.list)){
     if(s == 1){
       clm.bgc[[v]] <- data.frame(clm.bgc.var.list[[v]]) 
     } else {
@@ -328,8 +370,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(clm.bgc) <- c(clm.bgc.var)
-for(i in 1:length(clm.bgc.var)){
+names(clm.bgc) <- c(clm.bgc.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(clm.bgc)){
   names(clm.bgc[[i]]) <- site.list
 }
 # -----------------------------------
@@ -340,7 +382,7 @@ for(i in 1:length(clm.bgc.var)){
 # -----------------------------------
 clm.cn <- list() 
 for(s in 1:length(site.list)){
-  dir.clm.cn <- file.path(model.dir, "CLM-CN.v2", site.list[s])
+  dir.clm.cn <- file.path(model.dir, "CLM45CN.v3.1", paste0(site.list[s], ".CLM45CN"))
   files.clm.cn <- dir(dir.clm.cn)
   clm.cn.var.list <- list()
   #-----------------------------------
@@ -361,12 +403,26 @@ for(s in 1:length(site.list)){
         temp <- c(temp, ncvar_get(ncMT, clm.cn.var[v]))  }
       clm.cn.var.list[[v]] <- temp
     }    
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- clm.cn.var.list[["Evergreen"]]
+	  decid <- clm.cn.var.list[["Deciduous"]]
+	  grass <- clm.cn.var.list[["Grass"]]
+    }
+
+    clm.cn.var.list[["Evergreen"]] <- c(evg  , rowSums(ncvar_get(ncMT, "Fcomp")[,c(2:3, 5:6)]))
+    clm.cn.var.list[["Deciduous"]] <- c(decid, rowSums(ncvar_get(ncMT, "Fcomp")[,c(4,7:9)]))
+    clm.cn.var.list[["Grass"    ]] <- c(grass, rowSums(ncvar_get(ncMT, "Fcomp")[,c(13:17)]))
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(clm.cn.var.list) <- clm.cn.var
+  names(clm.cn.var.list) <- c(clm.cn.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(clm.cn.var)){
+  for(v in 1:length(clm.cn.var.list)){
     if(s == 1){
       clm.cn[[v]] <- data.frame(clm.cn.var.list[[v]]) 
     } else {
@@ -375,8 +431,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(clm.cn) <- c(clm.cn.var)
-for(i in 1:length(clm.cn.var)){
+names(clm.cn) <- c(clm.cn.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(clm.cn)){
   names(clm.cn[[i]]) <- site.list
 }
 # -----------------------------------
@@ -423,12 +479,26 @@ for(s in 1:length(site.list)){
       temp <- c(temp, ncvar_get(ncMT, lpj.g.var.y[v]))  }
       lpj.g.var.list[[v+length(lpj.g.var.m)]] <- temp
     }    
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- lpj.g.var.list[["Evergreen"]]
+	  decid <- lpj.g.var.list[["Deciduous"]]
+	  grass <- lpj.g.var.list[["Grass"]]
+    }
+
+    lpj.g.var.list[["Evergreen"]] <- c(evg  , colSums(ncvar_get(ncMT, "Fcomp")[c(1:2, 7:9),]))
+    lpj.g.var.list[["Deciduous"]] <- c(decid, colSums(ncvar_get(ncMT, "Fcomp")[c(3:6, 10),]))
+    lpj.g.var.list[["Grass"    ]] <- c(grass, colSums(ncvar_get(ncMT, "Fcomp")[c(11:12),]))
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(lpj.g.var.list) <- lpj.g.var
+  names(lpj.g.var.list) <- c(lpj.g.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(lpj.g.var)){
+  for(v in 1:length(lpj.g.var.list)){
     if(s == 1){
       lpj.g[[v]] <- data.frame(lpj.g.var.list[[v]]) 
     } else {
@@ -437,8 +507,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(lpj.g) <- c(lpj.g.var)
-for(i in 1:length(lpj.g.var)){
+names(lpj.g) <- c(lpj.g.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(lpj.g)){
   names(lpj.g[[i]]) <- site.list
 }
 # -----------------------------------
@@ -463,12 +533,20 @@ for(s in 1:length(site.list)){
     lpj.w.var.list[[v]] <- ncvar_get(ncMT, lpj.w.var[v])
     }    
   }
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    w.fcomp <- rowSums(ncvar_get(ncMT, "Fcomp")[c(1,3:4,6),])
+    lpj.w.var.list[["Evergreen"]] <- rowSums(ncvar_get(ncMT, "Fcomp")[,c(1,3:4,6)])/w.fcomp
+    lpj.w.var.list[["Deciduous"]] <- rowSums(ncvar_get(ncMT, "Fcomp")[,c(2,5,7)])/w.fcomp
+    lpj.w.var.list[["Grass"    ]] <- rowSums(ncvar_get(ncMT, "Fcomp")[,c(8:9)])/w.fcomp
+    # ----------------------
   nc_close(ncMT)      
 
-  names(lpj.w.var.list) <- lpj.w.var
+  names(lpj.w.var.list) <- c(lpj.w.var, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(lpj.w.var)){
+  for(v in 1:length(lpj.w.var.list)){
     if(s == 1){
       lpj.w[[v]] <- data.frame(lpj.w.var.list[[v]]) 
     } else {
@@ -477,8 +555,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(lpj.w) <- c(lpj.w.var)
-for(i in 1:length(lpj.w.var)){
+names(lpj.w) <- c(lpj.w.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(lpj.w)){
   names(lpj.w[[i]]) <- site.list
 }
 # -----------------------------------
@@ -516,12 +594,30 @@ for(s in 1:length(site.list)){
         temp <- c(temp, ncvar_get(ncMT, jules.s.var[v]))  } }
       jules.s.var.list[[v]] <- temp
      }   
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# NOTE: Because Jules isn't giving us Biomass, we're doing it off of LAI
+	# NOTE: "GRASS" includes both grass & shrubs for Jules
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- jules.s.var.list[["Evergreen"]]
+	  decid <- jules.s.var.list[["Deciduous"]]
+	  grass <- jules.s.var.list[["Grass"]]
+    }
+	lai.df  <- data.frame(t(ncvar_get(ncMT, "LAI"))) 
+	lai.tot <- rowSums(lai.df)
+	
+    jules.s.var.list[["Evergreen"]] <- c(evg  , lai.df[,2]/lai.tot)
+    jules.s.var.list[["Deciduous"]] <- c(decid, lai.df[,1]/lai.tot)
+    jules.s.var.list[["Grass"    ]] <- c(grass, rowSums(lai.df[,3:5])/lai.tot)
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(jules.s.var.list) <- jules.s.var2
+  names(jules.s.var.list) <- c(jules.s.var2, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(jules.s.var)){
+  for(v in 1:length(jules.s.var.list)){
     if(s == 1){
       jules.s[[v]] <- data.frame(jules.s.var.list[[v]]) 
     } else {
@@ -530,8 +626,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(jules.s) <- c(jules.s.var2)
-for(i in 1:length(jules.s.var)){
+names(jules.s) <- c(jules.s.var2, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(jules.s)){
   names(jules.s[[i]]) <- site.list
 }
 # -----------------------------------
@@ -567,12 +663,31 @@ for(s in 1:length(site.list)){
         temp <- c(temp, ncvar_get(ncMT, jules.triff.var[v]))  } }
       jules.triff.var.list[[v]] <- temp
      }   
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# NOTE: "GRASS" includes both grass & shrubs for Jules
+	# ----------------------
+    if(i == 1){ evg <- decid <- grass <- vector() 
+    } else { 
+	  evg   <- jules.triff.var.list[["Evergreen"]]
+	  decid <- jules.triff.var.list[["Deciduous"]]
+	  grass <- jules.triff.var.list[["Grass"]]
+    }
+	lai.tot <- colSums(ncvar_get(ncMT, "LAI"))
+
+	lai.df  <- data.frame(t(ncvar_get(ncMT, "LAI"))) 
+	lai.tot <- rowSums(lai.df)
+	
+    jules.triff.var.list[["Evergreen"]] <- c(evg  , lai.df[,2]/lai.tot)
+    jules.triff.var.list[["Deciduous"]] <- c(decid, lai.df[,1]/lai.tot)
+    jules.triff.var.list[["Grass"    ]] <- c(grass, rowSums(lai.df[,3:5])/lai.tot)
+    # ----------------------
     nc_close(ncMT)      
   }
-  names(jules.triff.var.list) <- jules.triff.var2
+  names(jules.triff.var.list) <- c(jules.triff.var2, "Evergreen", "Deciduous", "Grass")
   #-----------------------------------
   # Adding variable groups to master model list
-  for(v in 1:length(jules.triff.var)){
+  for(v in 1:length(jules.triff.var.list)){
     if(s == 1){
       jules.triff[[v]] <- data.frame(jules.triff.var.list[[v]]) 
     } else {
@@ -581,8 +696,8 @@ for(s in 1:length(site.list)){
   }
 } # Close the model loop
 # Adding site label to each variable
-names(jules.triff) <- c(jules.triff.var2)
-for(i in 1:length(jules.triff.var)){
+names(jules.triff) <- c(jules.triff.var2, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(jules.triff)){
   names(jules.triff[[i]]) <- site.list
 }
 # -----------------------------------
@@ -597,6 +712,8 @@ link.vars <- c("AGB", "TotLivBiomass", "TotSoilCarb", "GWBI", "HeteroResp", "NPP
 for(i in 1:length(link.vars)){
 	linkages[[link.vars[i]]] <- data.frame(Year=850:2010)
 }
+	linkages[["Evergreen"]] <- data.frame(Year=850:2010)
+	linkages[["Deciduous"]] <- data.frame(Year=850:2010)
 
 for(s in 1:length(site.list)){
   dir.linkages <- file.path(model.dir, "LINKAGES.v1.3", paste0(site.list[s], "_LINKAGES"))
@@ -607,9 +724,25 @@ for(s in 1:length(site.list)){
   #-----------------------------------
   for(i in 1:length(files.linkages)){
     ncMT <- nc_open(file.path(dir.linkages, files.linkages[i]))
-    for(v in 1:length(linkages)){
+    for(v in 1:length(link.vars)){
     	linkages[[v]][linkages[[v]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[[v]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- ncvar_get(ncMT, names(linkages)[v])
     }
+	# ----------------------
+	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+	# ----------------------
+    # if(i == 1){ evg <- decid <- grass <- vector() 
+    # } else { 
+	  # evg   <- linkages[["Evergreen"]]
+	  # decid <- linkages[["Deciduous"]]
+	  # grass <- linkages[["Grass"]]
+    # }
+    	linkages[["Evergreen"]][linkages[["Evergreen"]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[["Evergreen"]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- sum(ncvar_get(ncMT, "Fcomp")[c(3,6:7)])
+    	linkages[["Deciduous"]][linkages[["Deciduous"]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[["Deciduous"]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- sum(ncvar_get(ncMT, "Fcomp")[c(1:2, 4:5, 8:9)])
+
+    # linkages[["Evergreen"]] <- c(evg  , sum(ncvar_get(ncMT, "Fcomp")[c(3,6:7),]))
+    # linkages[["Deciduous"]] <- c(decid, sum(ncvar_get(ncMT, "Fcomp")[c(1:2, 4:5, 8:9),]))
+    # linkages[["Grass"    ]] <- c(grass, sum(ncvar_get(ncMT, "Fcomp")[3:4,]))
+    # ----------------------
     nc_close(ncMT)
   }
 } # Close the model loop

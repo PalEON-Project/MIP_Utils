@@ -1,20 +1,24 @@
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
 # Yearly Output
-# This script starts where 1_ left off, aggregates things to annual & packages them together
 # ------------------------------------------------------------------------
 # ------------------------------------------------------------------------
 
+# ###############################################
+# ###############################################
+# Note: there are a couple wonky places with ED that need to be removed to not throw thigns way, way off
+# ###############################################
+# ###############################################
 sec2yr <- 1*60*60*24*365
 
 # ---------------------------------------------- #
 # Variables that exist for all models, but need to be aggregated to year for comparision with LPJ
 
-AGB.y <- TotLivBiom <- TotSoilCarb <- LAI.y <- GPP.y <- NEE.y <- NPP.y <- HeteroResp.y <- AutoResp.y <- LAI.y  <- Qs.y <- SoilMoist.y <- SoilTemp.y <- Evap.y <- Transp.y <- Fcomp.y <- Dens.y <- BA.y <- list()
+AGB.y <- TotLivBiom <- TotSoilCarb <- LAI.y <- GPP.y <- NEE.y <- NPP.y <- HeteroResp.y <- AutoResp.y <- LAI.y  <- Qs.y <- SoilMoist.y <- SoilTemp.y <- Evap.y <- Transp.y <- Fcomp.y <- Dens.y <- BA.y <- Evergreen.y <- Deciduous.y <- Grass.y <- Fire.y <- list()
 
 tair.y <- precipf.y <- wind.y <- lwdown.y <- swdown.y <- qair.y <- psurf.y <- list()
 
-var1 <- c("NEE", "NPP", "HeteroResp", "AutoResp", "GPP", "LAI.m", "Evap", "Qs", "SoilMoist", "SoilTemp", "SWE", "Transp", "Fcomp", "Dens", "BA")
+var1 <- c("NEE", "NPP", "HeteroResp", "AutoResp", "Fire", "GPP", "LAI.m", "Evap", "Qs", "SoilMoist", "SoilTemp", "SWE", "Transp", "Fcomp", "Dens", "BA")
 for(i in 1:length(var1)){
   assign(var1[i], list())
 }
@@ -37,18 +41,91 @@ for(s in 1:length(site.list)){
       ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  jules.temp <- c(jules.temp, NA)
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-	  lpj.g.temp <- c(lpj.g.temp, NA)
-	  linkages.temp <- c(linkages.temp, NA)
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  sib.temp <- c(sib.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["Fcomp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    Fcomp.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["Fcomp"]][,s], lpj.g[["Fcomp"]][,s]), jules.temp, jules.triff.temp, linkages.temp, sib.temp)  
-    names(Fcomp.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
+    Fcomp.y[[s]] <- data.frame(ed2           = ed.temp, 
+                               ed2.lu        = ed.lu.temp, 
+                               clm.bgc       = clm.bgc.temp, 
+                               clm.cn        = clm.cn.temp, 
+                               lpj.wsl       = lpj.w[["Fcomp"]][,s], 
+                               lpj.guess     = lpj.g[["Fcomp"]][,s], 
+                               jules.stat    = NA, 
+                               jules.triffid = jules.triff.temp, 
+                               linkages      = NA, 
+                               sibcasa       = NA)  
+
+    #-----------------------------------
+	# Fraction Evergreen
+    #-----------------------------------
+    for(i in 1:length(yr.rows)){
+     if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
+      ed.temp <- c(ed.temp, mean(ed[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.temp <- c(jules.temp, mean(jules.s[["Evergreen"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      }
+
+    Evergreen.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                   ed2.lu        = ed.lu.temp, 
+                                   clm.bgc       = clm.bgc.temp, 
+                                   clm.cn        = clm.cn.temp, 
+                                   lpj.wsl       = lpj.w[["Evergreen"]][,s], 
+                                   lpj.guess     = lpj.g[["Evergreen"]][,s], 
+                                   jules.stat    = jules.temp, 
+                                   jules.triffid = jules.triff.temp, 
+                                   linkages      = linkages[["Evergreen"]][,site.list[s]], 
+                                   sibcasa       = NA)  
+
+    #-----------------------------------
+	# Fraction Deciduous
+    #-----------------------------------
+    for(i in 1:length(yr.rows)){
+     if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
+      ed.temp <- c(ed.temp, mean(ed[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.temp <- c(jules.temp, mean(jules.s[["Deciduous"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      }
+
+    Deciduous.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                   ed2.lu        = ed.lu.temp, 
+                                   clm.bgc       = clm.bgc.temp, 
+                                   clm.cn        = clm.cn.temp, 
+                                   lpj.wsl       = lpj.w[["Deciduous"]][,s], 
+                                   lpj.guess     = lpj.g[["Deciduous"]][,s], 
+                                   jules.stat    = jules.temp, 
+                                   jules.triffid = jules.triff.temp, 
+                                   linkages      = linkages[["Evergreen"]][,site.list[s]], 
+                                   sibcasa       = NA)  
+
+    #-----------------------------------
+	# Fraction Grass
+    #-----------------------------------
+    for(i in 1:length(yr.rows)){
+     if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
+      ed.temp <- c(ed.temp, mean(ed[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      jules.temp <- c(jules.temp, mean(jules.s[["Grass"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      }
+   
+    Grass.y[[s]] <- data.frame(ed2           = ed.temp, 
+                               ed2.lu        = ed.lu.temp, 
+                               clm.bgc       = clm.bgc.temp, 
+                               clm.cn        = clm.cn.temp, 
+                               lpj.wsl       = lpj.w[["Grass"]][,s], 
+                               lpj.guess     = lpj.g[["Grass"]][,s], 
+                               jules.stat    = jules.temp, 
+                               jules.triffid = jules.triff.temp, 
+                               linkages      = NA, 
+                               sibcasa       = NA)  
 
     #-----------------------------------
 	# Density (total)
@@ -57,23 +134,18 @@ for(s in 1:length(site.list)){
      if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
       ed.temp <- c(ed.temp, mean(ed[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
       ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
-	  clm.bgc.temp <- c(clm.bgc.temp, NA)
-	  clm.cn.temp <- c(clm.cn.temp, NA)
-	  jules.temp <- c(jules.temp, NA)
-	  jules.triff.temp <- c(jules.triff.temp, NA)
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-	  lpj.g.temp <- c(lpj.g.temp, NA)
-	  linkages.temp <- c(linkages.temp, NA)
-	  sib.temp <- c(sib.temp, NA)
-      # clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # jules.temp <- c(jules.temp, mean(jules.s[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["Dens"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    Dens.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["Dens"]][,s], lpj.g[["Dens"]][,s]), jules.temp, jules.triff.temp, linkages.temp, sib.temp)  
-    names(Dens.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
+    Dens.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = NA, 
+                              clm.cn        = NA, 
+                              lpj.wsl       = lpj.w[["Dens"]][,s], 
+                              lpj.guess     = lpj.g[["Dens"]][,s], 
+                              jules.stat    = NA, 
+                              jules.triffid = NA, 
+                              linkages      = NA, 
+                              sibcasa       = NA)  
 
 
     #-----------------------------------
@@ -83,22 +155,18 @@ for(s in 1:length(site.list)){
      if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
       ed.temp <- c(ed.temp, mean(ed[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
       ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
-	  clm.bgc.temp <- c(clm.bgc.temp, NA)
-	  clm.cn.temp <- c(clm.cn.temp, NA)
-	  jules.temp <- c(jules.temp, NA)
-	  jules.triff.temp <- c(jules.triff.temp, NA)
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-	  lpj.g.temp <- c(lpj.g.temp, NA)
-	  linkages.temp <- c(linkages.temp, NA)
-	  sib.temp <- c(sib.temp, NA)
-      # clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # jules.temp <- c(jules.temp, mean(jules.s[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["BA"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    BA.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["BA"]][,s], lpj.g[["BA"]][,s]), jules.temp, jules.triff.temp, linkages.temp, sib.temp)  
-    names(BA.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    BA.y[[s]] <- data.frame(ed2           = ed.temp, 
+                            ed2.lu        = ed.lu.temp, 
+                            clm.bgc       = NA, 
+                            clm.cn        = NA, 
+                            lpj.wsl       = lpj.w[["BA"]][,s], 
+                            lpj.guess     = lpj.g[["BA"]][,s], 
+                            jules.stat    = NA, 
+                            jules.triffid = NA, 
+                            linkages      = NA, 
+                            sibcasa       = NA)  
 
 	#---------------------------------------------------------------------
 	# CARBON FLUXES
@@ -117,11 +185,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["GPP"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["GPP"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["GPP"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)
 	  sib.temp <- c(sib.temp, mean(sib[["GPP"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    GPP.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(GPP.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    GPP.y[[s]] <- data.frame(ed2           = ed.temp, 
+                             ed2.lu        = ed.lu.temp, 
+                             clm.bgc       = clm.bgc.temp, 
+                             clm.cn        = clm.cn.temp, 
+                             lpj.wsl       = lpj.w.temp, 
+                             lpj.guess     = lpj.g.temp, 
+                             jules.stat    = jules.temp, 
+                             jules.triffid = jules.triff.temp, 
+                             linkages      = NA, 
+                             sibcasa       = sib.temp)
 
 
     #-----------------------------------
@@ -141,8 +217,17 @@ for(s in 1:length(site.list)){
 	  linkages.temp <- c(linkages.temp, NA)
 	  sib.temp <- c(sib.temp, mean(sib[["NPP"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    NPP.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["NPP"]][,s], lpj.g.temp, jules.temp, jules.triff.temp, linkages$NPP[,site.list[s]], sib.temp))  
-    names(NPP.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    NPP.y[[s]] <- data.frame(ed2           = ed.temp, 
+                             ed2.lu        = ed.lu.temp, 
+                             clm.bgc       = clm.bgc.temp, 
+                             clm.cn        = clm.cn.temp, 
+                             lpj.wsl       = lpj.w[["NPP"]][,s], 
+                             lpj.guess     = lpj.g.temp, 
+                             jules.stat    = jules.temp, 
+                             jules.triffid = jules.triff.temp, 
+                             linkages      = linkages$NPP[,site.list[s]], 
+                             sibcasa       = sib.temp)
 
 
     #-----------------------------------
@@ -158,11 +243,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["NPP"]][yr.rows[i]:(yr.rows[i]+11),s])-mean(jules.triff[["HeteroResp"]][yr.rows[i]:(yr.rows[i]+11),s]*0.237))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["NEE"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["NEE"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["NEE"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    NEE.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages$NEE[,site.list[s]], sib.temp))  
-    names(NEE.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    NEE.y[[s]] <- data.frame(ed2           = ed.temp, 
+                             ed2.lu        = ed.lu.temp, 
+                             clm.bgc       = clm.bgc.temp, 
+                             clm.cn        = clm.cn.temp, 
+                             lpj.wsl       = lpj.w.temp, 
+                             lpj.guess     = lpj.g.temp, 
+                             jules.stat    = jules.temp, 
+                             jules.triffid = jules.triff.temp, 
+                             linkages      = linkages$NEE[,site.list[s]], 
+                             sibcasa       = sib.temp)
 
 
     #-----------------------------------
@@ -178,12 +271,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["AutoResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["AutoResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["AutoResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)
 	  sib.temp <- c(sib.temp, mean(sib[["AutoResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    AutoResp.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(AutoResp.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
+    AutoResp.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                  ed2.lu        = ed.lu.temp, 
+                                  clm.bgc       = clm.bgc.temp, 
+                                  clm.cn        = clm.cn.temp, 
+                                  lpj.wsl       = lpj.w.temp, 
+                                  lpj.guess     = lpj.g.temp, 
+                                  jules.stat    = jules.temp, 
+                                  jules.triffid = jules.triff.temp, 
+                                  linkages      = NA, 
+                                  sibcasa       = sib.temp)
 
     #-----------------------------------
 	# HeteroResp
@@ -198,12 +298,41 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["HeteroResp"]][yr.rows[i]:(yr.rows[i]+11),s]*0.237))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["HeteroResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["HeteroResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["HeteroResp"]][yr.rows[i]:(yr.rows[i]+11),s]))
 	  }
-    HeteroResp.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages$HeteroResp[,site.list[s]], sib.temp))  
-    names(HeteroResp.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
+    HeteroResp.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                    ed2.lu        = ed.lu.temp, 
+                                    clm.bgc       = clm.bgc.temp, 
+                                    clm.cn        = clm.cn.temp, 
+                                    lpj.wsl       = lpj.w.temp, 
+                                    lpj.guess     = lpj.g.temp, 
+                                    jules.stat    = jules.temp, 
+                                    jules.triffid = jules.triff.temp, 
+                                    linkages      = NA, 
+                                    sibcasa       = sib.temp)   
+
+    #-----------------------------------
+	# Fire
+    #-----------------------------------
+    for(i in 1:length(yr.rows)){
+     if(i==1) ed.temp <- ed.lu.temp <- clm.bgc.temp <- clm.cn.temp <- jules.temp <- jules.triff.temp <- lpj.w.temp <- lpj.g.temp <- linkages.temp <- sib.temp <- vector()
+      ed.temp <- c(ed.temp, mean(ed[["Fire"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Fire"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["FIRE"]][yr.rows[i]:(yr.rows[i]+11),s]))
+      clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["FIRE"]][yr.rows[i]:(yr.rows[i]+11),s]))
+	  }
+
+    Fire.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = clm.bgc.temp, 
+                              clm.cn        = clm.cn.temp, 
+                              lpj.wsl       = lpj.w[["Fire"]][,s], 
+                              lpj.guess     = lpj.g[["Fire"]][,s]/sec2yr, 
+                              jules.stat    = NA, 
+                              jules.triffid = NA, 
+                              linkages      = NA, 
+                              sibcasa       = NA)   
 
 	#---------------------------------------------------------------------
 	# CARBON POOLS
@@ -220,17 +349,20 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["AGB"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-	  lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["AGB"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["AGB"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["AGB"]][yr.rows[i]:(yr.rows[i]+11),s]))
 
       }
-    AGB.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["TotLivBiom"]][,s], lpj.g[["AGB"]][,s], jules.temp, jules.triff.temp, linkages$AGB[,site.list[s]], sib.temp))  
-    names(AGB.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    AGB.y[[s]] <- data.frame(ed2           = ed.temp, 
+                             ed2.lu        = ed.lu.temp, 
+                             clm.bgc       = clm.bgc.temp, 
+                             clm.cn        = clm.cn.temp, 
+                             lpj.wsl       = lpj.w[["TotLivBiom"]][,s], 
+                             lpj.guess     = lpj.g[["AGB"]][,s], 
+                             jules.stat    = jules.temp, 
+                             jules.triffid = jules.triff.temp, 
+                             linkages      = linkages$AGB[,site.list[s]], 
+                             sibcasa       = sib.temp)
 
 
 	#-----------------------------------
@@ -244,17 +376,19 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-	  lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["AGB"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["TotLivBiom"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
       }
-    TotLivBiom[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["TotLivBiom"]][,s], lpj.g[["TotLivBiom"]][,s], jules.temp, jules.triff.temp, linkages$TotLivBiomass[,site.list[s]], sib.temp))  
-    names(TotLivBiom[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    TotLivBiom[[s]] <- data.frame(ed2           = ed.temp, 
+                                  ed2.lu        = ed.lu.temp, 
+                                  clm.bgc       = clm.bgc.temp, 
+                                  clm.cn        = clm.cn.temp, 
+                                  lpj.wsl       = lpj.w[["TotLivBiom"]][,s], 
+                                  lpj.guess     = lpj.g[["TotLivBiom"]][,s], 
+                                  jules.stat    = jules.temp, 
+                                  jules.triffid = jules.triff.temp, 
+                                  linkages      = linkages$TotLivBiomass[,site.list[s]], 
+                                  sibcasa       = sib.temp)
 
 
 	#-----------------------------------
@@ -277,7 +411,9 @@ for(s in 1:length(site.list)){
 	  sib.temp <- c(sib.temp, mean(sib[["TotSoilCarb"]][yr.rows[i]:(yr.rows[i]+11),s]))
 	  }
 
+	# ----------
 	# Extracting Soil from LPJ.G
+	# ----------
 	lpj.g.soilC <- vector()
     dir.lpj.g <- file.path(model.dir, "LPJ-GUESS.v6", paste(site.list[1], "LPJ-GUESS", sep="_"))
     # dir.lpj.g <- file.path(model.dir, "LPJ-GUESS.v2", paste(site.list[1], "LPJ-GUESS", sep="_"))
@@ -288,12 +424,23 @@ for(s in 1:length(site.list)){
   
 	for(i in 1:length(files.lpj.g.y)){
    		ncMT <- nc_open(file.path(dir.lpj.g, files.lpj.g.y[i]))
-        lpj.g.soilC <- c(lpj.g.soilC, colSums(ncvar_get(ncMT, "CarbPools")[3:4,]))
+        # lpj.g.soilC <- c(lpj.g.soilC, colSums(ncvar_get(ncMT, "CarbPools")[3:4,]))
+        lpj.g.soilC <- c(lpj.g.soilC, ncvar_get(ncMT, "CarbPools")[3,])
       	}    
     nc_close(ncMT)
+	# ----------
 
-    TotSoilCarb[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["TotSoilCarb"]][,s], lpj.g.soilC, jules.temp, jules.triff.temp, linkages$TotSoilCarb[,site.list[s]], sib.temp))  
-    names(TotSoilCarb[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+    TotSoilCarb[[s]] <- data.frame(ed2           = ed.temp, 
+                                   ed2.lu        = ed.lu.temp, 
+                                   clm.bgc       = clm.bgc.temp, 
+                                   clm.cn        = clm.cn.temp, 
+                                   lpj.wsl       = lpj.w[["TotSoilCarb"]][,s], 
+                                   lpj.guess     = lpj.g.soilC, 
+                                   jules.stat    = jules.temp, 
+                                   jules.triffid = jules.triff.temp, 
+                                   linkages      = linkages$TotSoilCarb[,site.list[s]], 
+                                   sibcasa       = sib.temp)
+
 
 
 	#---------------------------------------------------------------------
@@ -311,17 +458,22 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["LAI"]][yr.rows[i]:(yr.rows[i]+11),s]))
 
       }
-    LAI.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w[["LAI"]][,s], lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(LAI.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
-        
+    LAI.y[[s]] <- data.frame(ed2           = ed.temp, 
+                             ed2.lu        = ed.lu.temp, 
+                             clm.bgc       = clm.bgc.temp, 
+                             clm.cn        = clm.cn.temp, 
+                             lpj.wsl       = lpj.w[["LAI"]][,s], 
+                             lpj.guess     = lpj.g.temp, 
+                             jules.stat    = jules.temp, 
+                             jules.triffid = jules.triff.temp, 
+                             linkages      = NA, 
+                             sibcasa       = sib.temp)
+
 	#-----------------------------------
 	# Evap
     #-----------------------------------
@@ -335,11 +487,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Evap"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["Evap"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["Evap"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)      
 	  sib.temp <- c(sib.temp, mean(sib[["Evap"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    Evap.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages$Evap[,site.list[s]], sib.temp))  
-    names(Evap.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    Evap.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = clm.bgc.temp, 
+                              clm.cn        = clm.cn.temp, 
+                              lpj.wsl       = lpj.w.temp, 
+                              lpj.guess     = lpj.g.temp, 
+                              jules.stat    = jules.temp, 
+                              jules.triffid = jules.triff.temp, 
+                              linkages      = NA, 
+                              sibcasa       = sib.temp)
         
 	#-----------------------------------
 	# Transp
@@ -350,16 +510,21 @@ for(s in 1:length(site.list)){
       ed.lu.temp <- c(ed.lu.temp, mean(ed.lu[["Transp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       clm.bgc.temp <- c(clm.bgc.temp, mean(clm.bgc[["Tranp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["Tranp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  jules.temp <- c(jules.temp, "NA")
-	  jules.triff.temp <- c(jules.triff.temp, "NA")
-      # jules.temp <- c(jules.temp, mean(jules.s[["Transp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["Tranp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["Transp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["Tranp"]][yr.rows[i]:(yr.rows[i]+11),s]))
 	  }
-    Transp.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(Transp.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    Transp.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                ed2.lu        = ed.lu.temp, 
+                                clm.bgc       = clm.bgc.temp, 
+                                clm.cn        = clm.cn.temp, 
+                                lpj.wsl       = lpj.w.temp, 
+                                lpj.guess     = lpj.g.temp, 
+                                jules.stat    = NA, 
+                                jules.triffid = NA, 
+                                linkages      = NA, 
+                                sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# SoilMoist
@@ -374,11 +539,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["SoilMoist"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["SoilMoist"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["SoilMoist"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["SoilMoist"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    SoilMoist.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(SoilMoist.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    SoilMoist.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                   ed2.lu        = ed.lu.temp, 
+                                   clm.bgc       = clm.bgc.temp, 
+                                   clm.cn        = clm.cn.temp, 
+                                   lpj.wsl       = lpj.w.temp, 
+                                   lpj.guess     = lpj.g.temp, 
+                                   jules.stat    = jules.temp, 
+                                   jules.triffid = jules.triff.temp, 
+                                   linkages      = NA, 
+                                   sibcasa       = sib.temp)
 
 
 	#-----------------------------------
@@ -392,14 +565,20 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["SoilTemp"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    SoilTemp.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(SoilTemp.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    SoilTemp.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                 ed2.lu        = ed.lu.temp, 
+                                 clm.bgc       = clm.bgc.temp, 
+                                 clm.cn        = clm.cn.temp, 
+                                 lpj.wsl       = NA, # Is listed in the output; should be able to get it! 
+                                 lpj.guess     = lpj.g.temp, 
+                                 jules.stat    = jules.temp, 
+                                 jules.triffid = jules.triff.temp, 
+                                 linkages      = NA, 
+                                 sibcasa       = sib.temp)
 
 
 	#-----------------------------------
@@ -415,11 +594,19 @@ for(s in 1:length(site.list)){
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["Qs"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["Qs"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["Qs"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["Qs"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    Qs.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(Qs.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    Qs.y[[s]] <- data.frame(ed2           = ed.temp, 
+                            ed2.lu        = ed.lu.temp, 
+                            clm.bgc       = clm.bgc.temp, 
+                            clm.cn        = clm.cn.temp, 
+                            lpj.wsl       = lpj.w.temp, 
+                            lpj.guess     = lpj.g.temp, 
+                            jules.stat    = jules.temp, 
+                            jules.triffid = jules.triff.temp, 
+                            linkages      = NA, 
+                            sibcasa       = sib.temp)
 
 
 	#---------------------------------------------------------------------
@@ -437,15 +624,20 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["tair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-
       }
-    tair.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(tair.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    tair.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = clm.bgc.temp, 
+                              clm.cn        = clm.cn.temp, 
+                              lpj.wsl       = NA, 
+                              lpj.guess     = lpj.g.temp, 
+                              jules.stat    = jules.temp, 
+                              jules.triffid = jules.triff.temp, 
+                              linkages      = NA, 
+                              sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# precipf
@@ -458,14 +650,20 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  lpj.w.temp <- c(lpj.w.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["precipf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    precipf.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(precipf.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    precipf.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                 ed2.lu        = ed.lu.temp, 
+                                 clm.bgc       = clm.bgc.temp, 
+                                 clm.cn        = clm.cn.temp, 
+                                 lpj.wsl       = NA, 
+                                 lpj.guess     = lpj.g.temp, 
+                                 jules.stat    = jules.temp, 
+                                 jules.triffid = jules.triff.temp, 
+                                 linkages      = NA, 
+                                 sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# wind
@@ -478,15 +676,19 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["wind"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    wind.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(wind.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    wind.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = clm.bgc.temp, 
+                              clm.cn        = clm.cn.temp, 
+                              lpj.wsl       = NA, 
+                              lpj.guess     = NA, 
+                              jules.stat    = jules.temp, 
+                              jules.triffid = jules.triff.temp, 
+                              linkages      = NA, 
+                              sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# lwdown
@@ -499,15 +701,19 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["lwdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    lwdown.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(lwdown.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    lwdown.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                ed2.lu        = ed.lu.temp, 
+                                clm.bgc       = clm.bgc.temp, 
+                                clm.cn        = clm.cn.temp, 
+                                lpj.wsl       = NA, 
+                                lpj.guess     = NA, 
+                                jules.stat    = jules.temp, 
+                                jules.triffid = jules.triff.temp, 
+                                linkages      = NA, 
+                                sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# swdown
@@ -520,14 +726,20 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["swdown"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    swdown.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp,  linkages.temp, sib.temp))  
-    names(swdown.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    swdown.y[[s]] <- data.frame(ed2           = ed.temp, 
+                                ed2.lu        = ed.lu.temp, 
+                                clm.bgc       = clm.bgc.temp, 
+                                clm.cn        = clm.cn.temp, 
+                                lpj.wsl       = NA, 
+                                lpj.guess     = lpj.g.temp, 
+                                jules.stat    = jules.temp, 
+                                jules.triffid = jules.triff.temp, 
+                                linkages      = NA, 
+                                sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# qair
@@ -540,15 +752,19 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["qair"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    qair.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp,  linkages.temp, sib.temp))  
-    names(qair.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
+
+    qair.y[[s]] <- data.frame(ed2           = ed.temp, 
+                              ed2.lu        = ed.lu.temp, 
+                              clm.bgc       = clm.bgc.temp, 
+                              clm.cn        = clm.cn.temp, 
+                              lpj.wsl       = NA, 
+                              lpj.guess     = NA, 
+                              jules.stat    = jules.temp, 
+                              jules.triffid = jules.triff.temp, 
+                              linkages      = NA, 
+                              sibcasa       = sib.temp)
 
 	#-----------------------------------
 	# psurf
@@ -561,21 +777,24 @@ for(s in 1:length(site.list)){
       clm.cn.temp <- c(clm.cn.temp, mean(clm.cn[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.temp <- c(jules.temp, mean(jules.s[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       jules.triff.temp <- c(jules.triff.temp, mean(jules.triff[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      lpj.w.temp <- c(lpj.w.temp, NA)
-      lpj.g.temp <- c(lpj.g.temp, NA)
-      # lpj.w.temp <- c(lpj.w.temp, mean(lpj.w[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
-      # lpj.g.temp <- c(lpj.g.temp, mean(lpj.g[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
-	  linkages.temp <- c(linkages.temp, NA)            
 	  sib.temp <- c(sib.temp, mean(sib[["psurf"]][yr.rows[i]:(yr.rows[i]+11),s]))
       }
-    psurf.y[[s]] <- data.frame(cbind(ed.temp, ed.lu.temp, clm.bgc.temp, clm.cn.temp, lpj.w.temp, lpj.g.temp, jules.temp, jules.triff.temp, linkages.temp, sib.temp))  
-    names(psurf.y[[s]]) <- c("ed2", "ed2.lu", "clm.bgc", "clm.cn", "lpj.wsl", "lpj.guess", "jules.stat", "jules.triffid", "linkages", "sibcasa")
 
+    psurf.y[[s]] <- data.frame(ed2           = ed.temp, 
+                               ed2.lu        = ed.lu.temp, 
+                               clm.bgc       = clm.bgc.temp, 
+                               clm.cn        = clm.cn.temp, 
+                               lpj.wsl       = NA, 
+                               lpj.guess     = NA, 
+                               jules.stat    = jules.temp, 
+                               jules.triffid = jules.triff.temp, 
+                               linkages      = NA, 
+                               sibcasa       = sib.temp)
 
 }
 
 
-names(AGB.y) <- names(TotLivBiom) <- names(TotSoilCarb) <- names(LAI.y) <- names(GPP.y) <- names(NEE.y) <- names(NPP.y) <- names(HeteroResp.y) <- names(AutoResp.y) <- names(LAI.y)  <- names(Qs.y) <- names(SoilMoist.y) <- names(SoilTemp.y) <- names(Evap.y) <- names(Transp.y) <- names(Fcomp.y) <- names(Dens.y) <- names(BA.y) <- site.list
+names(AGB.y) <- names(TotLivBiom) <- names(TotSoilCarb) <- names(LAI.y) <- names(GPP.y) <- names(NEE.y) <- names(NPP.y) <- names(HeteroResp.y) <- names(AutoResp.y) <- names(LAI.y)  <- names(Qs.y) <- names(SoilMoist.y) <- names(SoilTemp.y) <- names(Evap.y) <- names(Transp.y) <- names(Fcomp.y) <- names(Dens.y) <- names(BA.y) <- names(Fire.y) <- site.list
 
 
 
@@ -584,27 +803,24 @@ names(AGB.y) <- names(TotLivBiom) <- names(TotSoilCarb) <- names(LAI.y) <- names
 # Storing key variables as .nc files
 dim.years <- ncdim_def(name="Year", units="Years", vals=1850:(1850+nrow(GPP.y[[1]])-1))
 dim.allmods <- ncdim_def(name="Models", units="", vals=1:ncol(GPP.y[[1]]))
-# dim.3mods <- ncdim_def(name="Models", units="", vals=1:3)
-# dim.4mods <- ncdim_def(name="Models", units="", vals=1:4)
 
 dim.string <- ncdim_def("names", "", 1:24, create_dimvar=FALSE)
 dim.allmods2 <- ncdim_def(name="Model Names", units="", vals=1:ncol(GPP.y[[1]]), create_dimvar=FALSE)
-# dim.3mods2 <- ncdim_def(name="Model Names", units="", vals=1:3, create_dimvar=FALSE)
-# dim.4mods2 <- ncdim_def(name="Model Names", units="", vals=1:4, create_dimvar=FALSE)
 
 units.fluxes     <- "kg m-2 s-1"
 units.pools      <- "kgC m-2"
 units.lai        <- "m2 m-2"
 units.temp       <- "K"
-units.smoist <- "kg m-2"
+units.smoist     <- "kg m-2"
 units.radiation  <- "W m-2"
 units.psurf      <- "Pa"
 units.qair       <- "kg kg-1"
 units.wind       <- "m s-1"
-models.all <- names(GPP.y[[1]])
-# models.4 <- names(tair.y[[1]])
+units.comp       <- "fraction"
 
-GPP.vars <- AGB.vars <- LAI.vars <-  NEE.vars <- NPP.vars <- AutoResp.vars <- HeteroResp.vars <- TotSoilCarb.vars <- Evap.vars <- Transp.vars <- SoilMoist.vars <- list()
+models.all <- names(GPP.y[[1]])
+
+GPP.vars <- AGB.vars <- LAI.vars <-  NEE.vars <- NPP.vars <- AutoResp.vars <- HeteroResp.vars <- TotSoilCarb.vars <- Evap.vars <- Transp.vars <- SoilMoist.vars <- Evergreen.vars <- Deciduous.vars <- Grass.vars <- Fire.vars <- list()
 
 tair.vars <- precipf.vars <- swdown.vars <- lwdown.vars <- wind.vars <- psurf.vars <- qair.vars <- list()
 
@@ -614,6 +830,7 @@ for(i in 1:length(site.list)){
 	LAI.vars[[i]] <- ncvar_def(site.list[i], units=units.lai,    dim=list(dim.allmods, dim.years))
 	NEE.vars[[i]] <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
 	NPP.vars[[i]] <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
+	Fire.vars[[i]] <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
 
 	AutoResp.vars[[i]]    <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
 	HeteroResp.vars[[i]]  <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
@@ -621,6 +838,12 @@ for(i in 1:length(site.list)){
 	Evap.vars[[i]]        <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
 	Transp.vars[[i]]      <- ncvar_def(site.list[i], units=units.fluxes, dim=list(dim.allmods, dim.years))
 	SoilMoist.vars[[i]]   <- ncvar_def(site.list[i], units=units.smoist, dim=list(dim.allmods, dim.years))
+
+	# Fraction Composition (rough)
+	Evergreen.vars[[i]]   <- ncvar_def(site.list[i], units=units.comp, dim=list(dim.allmods, dim.years))
+	Deciduous.vars[[i]]   <- ncvar_def(site.list[i], units=units.comp, dim=list(dim.allmods, dim.years))
+	Grass.vars[[i]]       <- ncvar_def(site.list[i], units=units.comp, dim=list(dim.allmods, dim.years))
+	
 
 	# met drivers
 	tair.vars[[i]]    <- ncvar_def(site.list[i], units=units.temp,      dim=list(dim.allmods, dim.years))
@@ -637,6 +860,7 @@ AGB.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(di
 LAI.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 NPP.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 NEE.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
+Fire.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 
 AutoResp.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 HeteroResp.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
@@ -644,6 +868,10 @@ TotSoilCarb.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim
 Evap.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 Transp.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 SoilMoist.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
+
+Evergreen.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
+Deciduous.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
+Grass.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 
 tair.vars[[length(site.list)+1]]    <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 precipf.vars[[length(site.list)+1]] <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
@@ -654,22 +882,26 @@ psurf.vars[[length(site.list)+1]]   <- ncvar_def("ModelNames", units="", dim=lis
 qair.vars[[length(site.list)+1]]    <- ncvar_def("ModelNames", units="", dim=list(dim.string, dim.allmods2), prec="char")
 
 
-names(GPP.vars) <- names(AGB.vars) <- names(AutoResp.vars) <- names(HeteroResp.vars) <- names(TotSoilCarb.vars) <- names(Evap.vars) <- names(Transp.vars) <- names(SoilMoist.vars) <-  names(tair.vars) <- names(precipf.vars) <- names(swdown.vars) <- names(lwdown.vars) <- names(wind.vars) <- names(psurf.vars) <- names(qair.vars) <- c(site.list, "ModelNames")
+names(GPP.vars) <- names(AGB.vars) <- names(LAI.vars) <- names(NEE.vars) <- names(NPP.vars) <- names(Fire.vars) <- names(AutoResp.vars) <- names(HeteroResp.vars) <- names(TotSoilCarb.vars) <- names(Evap.vars) <- names(Transp.vars) <- names(SoilMoist.vars) <- names(Evergreen.vars) <- names(Deciduous.vars) <- names(Grass.vars) <- names(tair.vars) <- names(precipf.vars) <- names(swdown.vars) <- names(lwdown.vars) <- names(wind.vars) <- names(psurf.vars) <- names(qair.vars) <- c(site.list, "ModelNames")
 summary(GPP.vars)
 summary(NPP.vars)
 
 output.location <- "phase1a_output_variables"
-gpp <- nc_create(file.path(output.location, "GPP.annual.nc"), GPP.vars)
-agb <- nc_create(file.path(output.location, "AGB.annual.nc"), AGB.vars)
-lai <- nc_create(file.path(output.location, "LAI.annual.nc"), LAI.vars)
-npp <- nc_create(file.path(output.location, "NPP.annual.nc"), NPP.vars)
-nee <- nc_create(file.path(output.location, "NEE.annual.nc"), NEE.vars)
+gpp  <- nc_create(file.path(output.location, "GPP.annual.nc"), GPP.vars)
+agb  <- nc_create(file.path(output.location, "AGB.annual.nc"), AGB.vars)
+lai  <- nc_create(file.path(output.location, "LAI.annual.nc"), LAI.vars)
+npp  <- nc_create(file.path(output.location, "NPP.annual.nc"), NPP.vars)
+nee  <- nc_create(file.path(output.location, "NEE.annual.nc"), NEE.vars)
+fire <- nc_create(file.path(output.location, "Fire.annual.nc"), Fire.vars)
 auto.resp   <- nc_create(file.path(output.location, "RespirationAuto.annual.nc"  ), AutoResp.vars)
 hetero.resp <- nc_create(file.path(output.location, "RespirationHetero.annual.nc"), HeteroResp.vars)
 soilcarb    <- nc_create(file.path(output.location, "TotSoilCarb.annual.nc"      ), TotSoilCarb.vars)
 evap        <- nc_create(file.path(output.location, "Evap.annual.nc"             ), Evap.vars)
 soilmoist   <- nc_create(file.path(output.location, "SoilMoist.annual.nc"        ), SoilMoist.vars)
 # transp <- nc_create(file.path(output.location, "Transp.annual.nc"), Transp.vars)
+evergreen   <- nc_create(file.path(output.location, "FracEvergreen.annual.nc"    ), Evergreen.vars)
+deciduous   <- nc_create(file.path(output.location, "FracDeciduous.annual.nc"    ), Deciduous.vars)
+grass       <- nc_create(file.path(output.location, "FracGrass.annual.nc"        ), Grass.vars)
 
 # All Drivers
 tair    <- nc_create(file.path(output.location, "tair.annual.nc"   ), tair.vars   )
@@ -688,6 +920,7 @@ for(i in 1:length(site.list)){
 	ncvar_put(agb, AGB.vars[[i]], t(AGB.y[[i]]))
 	ncvar_put(lai, LAI.vars[[i]], t(LAI.y[[i]]))
 	ncvar_put(nee, NEE.vars[[i]], t(NEE.y[[i]]))
+	ncvar_put(fire, Fire.vars[[i]], t(Fire.y[[i]]))
 
 	ncvar_put(auto.resp  , AutoResp.vars[[i]]   , t(AutoResp.y[[i]])   )
 	ncvar_put(hetero.resp, HeteroResp.vars[[i]] , t(HeteroResp.y[[i]]) )
@@ -695,6 +928,10 @@ for(i in 1:length(site.list)){
 	ncvar_put(evap       , Evap.vars[[i]]       , t(Evap.y[[i]])       )
 	ncvar_put(soilmoist  , SoilMoist.vars[[i]]  , t(SoilMoist.y[[i]])  )
 	# ncvar_put(transp   , Transp.vars[[i]], t(Transp.y[[i]]))
+
+	ncvar_put(evergreen  , Evergreen.vars[[i]]  , t(Evergreen.y[[i]])  )
+	ncvar_put(deciduous  , Deciduous.vars[[i]]  , t(Deciduous.y[[i]])  )
+	ncvar_put(grass      , Grass.vars[[i]]      , t(Grass.y[[i]])      )
 
 	# Drivers
 	ncvar_put(tair   , tair.vars[[i]]   , t(tair.y[[i]])    )
@@ -716,13 +953,17 @@ ncvar_put(agb, AGB.vars[[length(site.list)+1]], models.all)
 ncvar_put(lai, LAI.vars[[length(site.list)+1]], models.all)
 ncvar_put(npp, NPP.vars[[length(site.list)+1]], models.all)
 ncvar_put(nee, NEE.vars[[length(site.list)+1]], models.all)
+ncvar_put(fire, Fire.vars[[length(site.list)+1]], models.all)
 
 ncvar_put(auto.resp  , AutoResp.vars[[length(site.list)+1]]   , models.all)
 ncvar_put(hetero.resp, HeteroResp.vars[[length(site.list)+1]] , models.all)
 ncvar_put(soilcarb   , TotSoilCarb.vars[[length(site.list)+1]], models.all)
 ncvar_put(evap       , Evap.vars[[length(site.list)+1]]       , models.all)
 ncvar_put(soilmoist  , SoilMoist.vars[[length(site.list)+1]]  , models.all)
-# ncvar_put(transp     , Transp.vars[[length(site.list)+1]]       , models.all)
+# ncvar_put(transp     , Transp.vars[[length(site.list)+1]]    , models.all)
+ncvar_put(evergreen  , Evergreen.vars[[length(site.list)+1]]  , models.all)
+ncvar_put(deciduous  , Deciduous.vars[[length(site.list)+1]]  , models.all)
+ncvar_put(grass      , Grass.vars    [[length(site.list)+1]]  , models.all)
 
 ncvar_put(tair   , tair.vars[[length(site.list)+1]]   , models.all)
 ncvar_put(precipf, precipf.vars[[length(site.list)+1]], models.all)
@@ -733,7 +974,7 @@ ncvar_put(psurf  , psurf.vars[[length(site.list)+1]]  , models.all)
 ncvar_put(qair   , qair.vars[[length(site.list)+1]]   , models.all)
 
 
-nc_close(gpp); nc_close(agb); nc_close(auto.resp); nc_close(hetero.resp); nc_close(soilcarb); nc_close(evap); nc_close(soilmoist); #nc_close(transp)
+nc_close(gpp); nc_close(agb); nc_close(lai); nc_close(nee); nc_close(npp); nc_close(fire); nc_close(auto.resp); nc_close(hetero.resp); nc_close(soilcarb); nc_close(evap); nc_close(soilmoist); nc_close(evergreen); nc_close(deciduous); nc_close(grass); #nc_close(transp)
 nc_close(tair); nc_close(precipf); nc_close(swdown); nc_close(lwdown); nc_close(wind); nc_close(psurf); nc_close(qair);
 
 # nc <- nc_open(file.path(file.path(output.location, "GPP.annual.nc")))
@@ -811,7 +1052,7 @@ pdf(width=8.5, height=11, file="PrelimGraphs/NEE_Annual_AllSites.pdf")
 par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
 for(s in 1:length(site.list)){
 	plot(-NEE.y[[s]][,"ed2"], type="l", ylim=range(NEE.y, na.rm=T), lwd=2, ylab="NEE KgC/m2/s", xlab="years since 850-01-01", main=paste(site.list[s], "NEE", sep=": "))
-	lines(NEE.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(-NEE.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
 	lines(NEE.y[[s]][,"lpj.wsl"], col="red", lwd=2)
 	lines(NEE.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(NEE.y[[s]][,"clm.bgc"], col="green3", lwd=2)
@@ -833,7 +1074,7 @@ pdf(width=8.5, height=11, file="PrelimGraphs/NEE_Annual_AllSites_Truncated.pdf")
 par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
 for(s in 1:length(site.list)){
 	plot(-NEE.y[[s]][,"ed2"], type="l", ylim=c(-4e-8, 5e-8), lwd=2, ylab="NEE KgC/m2/s", xlab="years since 850-01-01", main=paste(site.list[s], "NEE", sep=": "))
-	lines(NEE.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(-NEE.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
 	lines(NEE.y[[s]][,"lpj.wsl"], col="red", lwd=2)
 	lines(NEE.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(NEE.y[[s]][,"clm.bgc"], col="green3", lwd=2)
@@ -992,7 +1233,7 @@ for(s in 1:length(site.list)){
 	plot(LAI.y[[s]][,"ed2"], ylim=range(LAI.y, na.rm=T), col="black", type="l", lwd=2, ylab="LAI", xlab="years since 850-01-01", main=paste(site.list[s], "LAI", sep=": "))
 	lines(LAI.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
 	lines(LAI.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(LAI.y[[s]][,"clm.bgc"], col="green3", lwd=0.5)
+	lines(LAI.y[[s]][,"clm.bgc"], col="green3", lwd=2)
 	lines(LAI.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(LAI.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(LAI.y[[s]][,"jules.stat"], col="orange4", lwd=2)
@@ -1017,7 +1258,7 @@ for(s in 1:length(site.list)){
 	lines(Evap.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
 	lines(Evap.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(Evap.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(Evap.y[[s]][,"clm.bgc"], col="green3", lwd=0.5)
+	lines(Evap.y[[s]][,"clm.bgc"], col="green3", lwd=2)
 	lines(Evap.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(Evap.y[[s]][,"linkages"], col="purple2", lwd=2)
 	lines(Evap.y[[s]][,"jules.stat"], col="orange4", lwd=2)
@@ -1050,7 +1291,7 @@ for(s in 1:length(site.list)){
 	plot(SoilMoist.y[[s]][,"ed2"], ylim=range(SoilMoist.y, na.rm=T), type="l", lwd=2, ylab="SoilMoist", xlab="years since 850-01-01", main=paste(site.list[s], "Soil Moisture", sep=": "))
 	lines(SoilMoist.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(SoilMoist.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(SoilMoist.y[[s]][,"clm.bgc"], col="green3", lwd=0.5)
+	lines(SoilMoist.y[[s]][,"clm.bgc"], col="green3", lwd=2)
 	lines(SoilMoist.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(SoilMoist.y[[s]][,"jules.stat"], col="orange4", lwd=2)
 	lines(SoilMoist.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=2)
@@ -1066,10 +1307,10 @@ pdf(width=8.5, height=11, file="PrelimGraphs/SoilTemp_Annual_AllSites.pdf")
 par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
 for(s in 1:length(site.list)){
 	plot(SoilTemp.y[[s]][,"ed2"], ylim=c(270, 285), type="l", lwd=2, ylab="SoilTemp K", xlab="years since 850-01-01", main=paste(site.list[s], "Soil Temperature", sep=": "))
-	lines(SoilTemp.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(SoilTemp.y[[s]][,"ed2.lu"], col="gray50", lwd=2)
 	lines(SoilTemp.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	# lines(SoilTemp.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(SoilTemp.y[[s]][,"clm.bgc"], col="green3", lwd=0.5)
+	lines(SoilTemp.y[[s]][,"clm.bgc"], col="green3", lwd=2)
 	lines(SoilTemp.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(SoilTemp.y[[s]][,"jules.stat"], col="orange4", lwd=2)
 	lines(SoilTemp.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=2)
@@ -1087,7 +1328,7 @@ for(s in 1:length(site.list)){
 	lines(Qs.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
 	lines(Qs.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 	lines(Qs.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(Qs.y[[s]][,"clm.bgc"], col="green3", lwd=0.5)
+	lines(Qs.y[[s]][,"clm.bgc"], col="green3", lwd=2)
 	lines(Qs.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(Qs.y[[s]][,"jules.stat"], col="orange4", lwd=2)
 	lines(Qs.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=2)
@@ -1099,7 +1340,60 @@ dev.off()
 
 # Fcomp
 summary(Fcomp.y[[1]])
+# Evergreen
+summary(Evergreen.y[[1]])
+pdf(width=8.5, height=11, file="PrelimGraphs/FracEvergreen_Annual_AllSites.pdf")
+par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
+for(s in 1:length(site.list)){
+	plot(Evergreen.y[[s]][,"ed2"], ylim=c(0,1), col="black", type="l", lwd=2, ylab="GPP KgC/m2/s", xlab="years since 850-01-01", main=paste(site.list[s], "Evergeen", sep=": "))
+	lines(Evergreen.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(Evergreen.y[[s]][,"jules.stat"], col="orange4", lwd=2.5)
+	lines(Evergreen.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=1.5)
+	lines(Evergreen.y[[s]][,"lpj.guess"], col="blue", lwd=2)
+	lines(Evergreen.y[[s]][,"lpj.wsl"], col="red", lwd=2)
+	lines(Evergreen.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	lines(Evergreen.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
+	lines(Evergreen.y[[s]][,"sibcasa"], col="salmon", lwd=2)
+	# lines(Evergreen.y[[s]][,"linkages"], col="purple", lwd=2)
+	if(s==2) legend("bottomright", legend=c("ED2", "ED2-LU", "LPJ-GUESS", "LPJ-WSL", "CLM-BGC", "CLM-CN", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA", "LINKAGES"), col=c("black", "gray50", "blue", "red", "green3", "darkolivegreen", "orange4", "goldenrod3", "salmon", "purple"), lwd=2, bty="n", ncol=3, cex=0.75)
+}
+dev.off()
 
+summary(Deciduous.y[[1]])
+pdf(width=8.5, height=11, file="PrelimGraphs/FracDeciduous_Annual_AllSites.pdf")
+par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
+for(s in 1:length(site.list)){
+	plot(Deciduous.y[[s]][,"ed2"], ylim=c(0,1), col="black", type="l", lwd=2, ylab="GPP KgC/m2/s", xlab="years since 850-01-01", main=paste(site.list[s], "Deciduous", sep=": "))
+	lines(Deciduous.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(Deciduous.y[[s]][,"jules.stat"], col="orange4", lwd=2.5)
+	lines(Deciduous.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=1.5)
+	lines(Deciduous.y[[s]][,"lpj.guess"], col="blue", lwd=2)
+	lines(Deciduous.y[[s]][,"lpj.wsl"], col="red", lwd=2)
+	lines(Deciduous.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	lines(Deciduous.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
+	lines(Deciduous.y[[s]][,"sibcasa"], col="salmon", lwd=2)
+	# lines(Deciduous.y[[s]][,"linkages"], col="purple", lwd=2)
+	if(s==5) legend("topright", legend=c("ED2", "ED2-LU", "LPJ-GUESS", "LPJ-WSL", "CLM-BGC", "CLM-CN", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA", "LINKAGES"), col=c("black", "gray50", "blue", "red", "green3", "darkolivegreen", "orange4", "goldenrod3", "salmon", "purple"), lwd=2, bty="n", ncol=3, cex=0.75)
+}
+dev.off()
+
+summary(Grass.y[[1]])
+pdf(width=8.5, height=11, file="PrelimGraphs/FracGrass_Annual_AllSites.pdf")
+par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
+for(s in 1:length(site.list)){
+	plot(Grass.y[[s]][,"ed2"], ylim=c(0,1), col="black", type="l", lwd=2, ylab="GPP KgC/m2/s", xlab="years since 850-01-01", main=paste(site.list[s], "Grass", sep=": "))
+	lines(Grass.y[[s]][,"ed2.lu"], col="gray50", lwd=1.5)
+	lines(Grass.y[[s]][,"jules.stat"], col="orange4", lwd=2.5)
+	lines(Grass.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=1.5)
+	lines(Grass.y[[s]][,"lpj.guess"], col="blue", lwd=2)
+	lines(Grass.y[[s]][,"lpj.wsl"], col="red", lwd=2)
+	lines(Grass.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	lines(Grass.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
+	lines(Grass.y[[s]][,"sibcasa"], col="salmon", lwd=2)
+	# lines(Grass.y[[s]][,"linkages"], col="purple", lwd=2)
+	if(s==2) legend("topleft", legend=c("ED2", "ED2-LU", "LPJ-GUESS", "LPJ-WSL", "CLM-BGC", "CLM-CN", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA", "LINKAGES"), col=c("black", "gray50", "blue", "red", "green3", "darkolivegreen", "orange4", "goldenrod3", "salmon", "purple"), lwd=2, bty="n", ncol=3, cex=0.75)
+}
+dev.off()
 # Dens
 # BA
 
@@ -1117,15 +1411,17 @@ for(s in 1:length(site.list)){
 	plot(tair.y[[s]][,"ed2"], ylim=c(270, max(tair.y[[s]], na.rm=T)), type="l", lwd=2, ylab="Air Temp (k)", xlab="years since 850-01-01", main=paste(site.list[s], "Air Temp", sep=": "))
 	lines(tair.y[[s]][,"lpj.guess"], col="blue", lwd=2.5)
 #	lines(tair.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(tair.y[[s]][,"clm.bgc"], col="green3", lwd=2)
-	lines(tair.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
+	# lines(tair.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	# lines(tair.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(tair.y[[s]][,"jules.stat"], col="orange4", lwd=1.5)
 	lines(tair.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=1.5)
 	# lines(tair.y[[s]][,"lpj.guess"], col="blue", lwd=1)
 	# lines(tair.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=1)
 	lines(tair.y[[s]][,"ed2"], col="black", lwd=1)
 	lines(tair.y[[s]][,"sibcasa"], col="salmon", lwd=1)
-	lines(tair.y[[s]][,"ed2.lu"], col="gray50", lwd=0.8)
+	lines(tair.y[[s]][,"clm.bgc"], col="green3", lwd=1)
+	lines(tair.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=1)
+	# lines(tair.y[[s]][,"ed2.lu"], col="gray50", lwd=0.8)
 	if(s==6) legend("bottomleft", legend=c("ED2", "ED2-LU","CLM-BGC", "CLM-CN", "LPJ-GUESS", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA"), col=c("black","gray50", "green3", "blue", "darkolivegreen", "orange4", "goldenrod3", "salmon"), lwd=2, bty="n", ncol=3, cex=0.75)
 }
 dev.off()
@@ -1135,15 +1431,17 @@ pdf("PrelimGraphs/MetDrivers_precipf_Annual_AllSites.pdf")
 par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
 for(s in 1:length(site.list)){
 	plot(precipf.y[[s]][,"ed2"], ylim=range(precipf.y, na.rm=T), type="l", lwd=2, ylab="Precip Rate", xlab="years since 850-01-01", main=paste(site.list[s], "Precip Rate", sep=": "))
-	lines(precipf.y[[s]][,"ed2.lu"], col="gray50", lwd=2)
+	lines(precipf.y[[s]][,"ed2"], col="black", lwd=2)
 	lines(precipf.y[[s]][,"lpj.guess"], col="blue", lwd=2.5)
 #	lines(precipf.y[[s]][,"lpj.wsl"], col="red", lwd=2)
-	lines(precipf.y[[s]][,"clm.bgc"], col="green3", lwd=2)
-	lines(precipf.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
+	# lines(precipf.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	# lines(precipf.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	lines(precipf.y[[s]][,"jules.stat"], col="orange4", lwd=1)
 	lines(precipf.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=1)
 	lines(precipf.y[[s]][,"sibcasa"], col="salmon", lwd=1)
 	lines(precipf.y[[s]][,"ed2.lu"], col="gray50", lwd=0.8)
+	lines(precipf.y[[s]][,"clm.bgc"], col="green3", lwd=1)
+	lines(precipf.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=1)
 	if(s==5) legend("topleft", legend=c("ED2", "ED2-LU", "CLM-BGC", "CLM-CN", "LPJ-GUESS", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA"), col=c("black", "gray50", "green3", "darkolivegreen", "blue", "orange4", "goldenrod3", "salmon"), lwd=2, bty="n", ncol=2)
 }
 dev.off()
@@ -1153,6 +1451,7 @@ pdf("PrelimGraphs/MetDrivers_swdown_Annual_AllSites.pdf")
 par(mfrow=c(round((length(site.list)+.5)/2, 0), 2), mar=c(4,5,4,1)+0.1)
 for(s in 1:length(site.list)){
 	plot(swdown.y[[s]][,"ed2"], ylim=range(swdown.y[[s]], na.rm=T), type="l", lwd=2, ylab="swdown (W/m2/s)", xlab="years since 850-01-01", main=paste(site.list[s], "Downwelling Shortwave Rad", sep=": "))
+	lines(swdown.y[[s]][,"ed2"], col="black", lwd=2)
 	lines(swdown.y[[s]][,"ed2.lu"], col="gray50", lwd=2)
 	lines(swdown.y[[s]][,"lpj.guess"], col="blue", lwd=2)
 #	lines(tair.y[[s]][,"lpj.wsl"], col="red", lwd=2)
@@ -1161,6 +1460,8 @@ for(s in 1:length(site.list)){
 	lines(swdown.y[[s]][,"jules.stat"], col="orange4", lwd=2)
 	lines(swdown.y[[s]][,"jules.triffid"], col="goldenrod3", lwd=2)
 	lines(swdown.y[[s]][,"sibcasa"], col="salmon", lwd=2)
+	lines(swdown.y[[s]][,"clm.bgc"], col="green3", lwd=2)
+	lines(swdown.y[[s]][,"clm.cn"], col="darkolivegreen", lwd=2)
 	# if(s==1) legend("bottomleft", legend=c("ED2", "CLM-BGC", "CLM-CN", "LPJ-GUESS", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA"), col=c("black", "green3", "darkolivegreen", "blue", "orange4", "goldenrod3", "salmon"), lwd=2, bty="c", bg="white", ncol=3, cex=0.7)
 }
 dev.off()
@@ -1180,6 +1481,7 @@ for(s in 1:length(site.list)){
 	if(s==1) legend("bottomleft", legend=c("ED2", "ED2-LU", "CLM-BGC", "CLM-CN", "JULES-STATIC", "JULES-TRIFFID", "SiBCASA"), col=c("black", "gray50", "green3", "darkolivegreen", "orange4", "goldenrod3", "salmon"), lwd=2, bty="n", ncol=2, cex=0.5)
 }
 dev.off()
+
 
 #------------------------------------------
 # # tair
@@ -1223,7 +1525,7 @@ dev.off()
 # dev.off()
 
 # # co2
-# co2.ann.dir <- "~/Dropbox/PalEON CR/phase1a_env_drivers/phase1a_env_drivers_v3/paleon_co2/paleon_annual_co2.nc"
+# co2.ann.dir <- "~/Dropbox/PalEON_CR/phase1a_env_drivers/phase1a_env_drivers_v3/paleon_co2/paleon_annual_co2.nc"
 # co2.ann.nc <- nc_open(co2.ann.dir)
 # co2.ann <- ncvar_get(co2.ann.nc, "co2")
 # nc_close(co2.ann.nc)
