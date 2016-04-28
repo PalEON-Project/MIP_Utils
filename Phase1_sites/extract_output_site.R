@@ -16,7 +16,6 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
   model.out <- list()
   
   # recoding some variable names that have slight typos (that weren't worth emailing about)
-  vars.orig <- vars
   if(model %in% c("JULES", "JULES-TRIFFID")){
     vars <- recode(vars, "'TotLivBiom'='TotLivBio'")
   }
@@ -136,6 +135,8 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
     names(dimnames(model.out[[v]]))[[length(dim(model.out[[v]]))]] <- "Site"
     dimnames(model.out[[v]])[[length(dim(model.out[[v]]))]] <- sites.data
   }
-
+  
+  # Fix any wonky names in specific models (undoing lines 19-24)
+  names(model.out) <- recode(names(model.out), "'TotLivBio'='TotLivBiom'; 'Tranp'='Transp'")
   return(model.out)
 } # End Function
