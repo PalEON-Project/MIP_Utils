@@ -42,7 +42,7 @@ index <- gregexpr("month",files.lpj.g[2])[[1]][1] # LPJ-GUESS has separate annua
 files.lpj.g.m <- files.lpj.g[substr(files.lpj.g, index, index+4)=="month"]
 files.lpj.g.y <- files.lpj.g[substr(files.lpj.g, index, index+5)=="annual"]
 
-dir.lpj.w <- file.path(model.dir, "LPJ-WSL.v5")
+dir.lpj.w <- file.path(model.dir, "LPJ-WSL.v6")
 files.lpj.w <- dir(dir.lpj.w)
 
 dir.jules.s <- file.path(model.dir, "JULES.v2", paste(site.list[1], "JULES_STATIC", sep="_"))
@@ -51,8 +51,9 @@ files.jules.s <- dir(dir.jules.s)
 dir.jules.triff <- file.path(model.dir, "JULES_TRIFFID.v1", paste(site.list[1], "JULES_TRIFFID", sep="_"))
 files.jules.triff <- dir(dir.jules.triff)
 
-dir.linkages <- file.path(model.dir, "LINKAGES.v1.3", paste(site.list[1], "LINKAGES", sep="_"))
-files.linkages <- dir(dir.linkages, ".nc")
+dir.linkages <- file.path(model.dir, "LINKAGES.v2.1", paste(site.list[1], "LINKAGES", sep="."))
+files.linkages <- dir(dir.linkages, c(site.list[1], ".nc"))
+files.linkages <- files.linkages[!substr(files.linkages, nchar(files.linkages)-3, nchar(files.linkages))==".var"]
 
 dir.sib <- file.path(model.dir, "SiBCASA.v1", paste(site.list[1], "SiBCASA", sep="_"))
 files.sib <- dir(dir.sib, ".nc")
@@ -88,7 +89,7 @@ sib.var <- names(sib$var)
 sib.var2 <- recode(sib.var, "'Tranp'='Transp'")
 
 # PFT-level variables need to be dealt with slightly differently than single-string variables
-var.diversity <- c("BA", "Dens", "Fcomp", "PFT", "fpc", "pft-vegc", "pft-lai", "pft-npp", "pft-diam", "pft-height", "nind", "estrate")
+var.diversity <- c("BA", "Dens", "Fcomp", "PFT", "fpc", "pft-vegc", "pft-lai", "pft-npp", "pft-diam", "pft-height", "nind", "estrate", "AGB.pft")
 
 # summary(clm$var)
 # summary(ncvar_get(clm, "Fcomp"))
@@ -520,7 +521,7 @@ for(i in 1:length(lpj.g)){
 lpj.w <- list()
 var.pft.lpj.w <- c("LAI", "NPP")
 for(s in 1:length(site.list)){
-  dir.lpj.w <- file.path(model.dir, "LPJ-WSL.v5")
+  dir.lpj.w <- file.path(model.dir, "LPJ-WSL.v6")
   files.lpj.w <- dir(dir.lpj.w)
   lpj.w.var.list <- list()
   #-----------------------------------
@@ -704,49 +705,70 @@ for(i in 1:length(jules.triff)){
 
 
 # -----------------------------------
-# Linkages
+# LINKAGES
 # -----------------------------------
 linkages <- list()
-link.vars <- c("AGB", "TotLivBiomass", "TotSoilCarb", "GWBI", "HeteroResp", "NPP", "NEE", "Evap")
-
-for(i in 1:length(link.vars)){
-	linkages[[link.vars[i]]] <- data.frame(Year=850:2010)
-}
-	linkages[["Evergreen"]] <- data.frame(Year=850:2010)
-	linkages[["Deciduous"]] <- data.frame(Year=850:2010)
-
+linkages.diversity <- list()
 for(s in 1:length(site.list)){
-  dir.linkages <- file.path(model.dir, "LINKAGES.v1.3", paste0(site.list[s], "_LINKAGES"))
-  files.linkages <- dir(dir.linkages)
-  files.linkages <- files.linkages[which(as.numeric(substr(files.linkages,1,4))>=850)]
+  dir.linkages <- file.path(model.dir, "LINKAGES.v2.1", paste(site.list[s], "LINKAGES", sep="."))
+  files.linkages <- dir(dir.linkages, c(site.list[s], ".nc"))
+  files.linkages <- files.linkages[!substr(files.linkages, nchar(files.linkages)-3, nchar(files.linkages))==".var"]
+  
+  #  nee.temp <- npp.temp <- rh.temp <- ah.temp <- gpp.temp <- vector()
+  linkages.var.list <- list()
+  div.var.list <- list()
   #-----------------------------------
   # File loop extracting time series by variable group
-  #-----------------------------------
   for(i in 1:length(files.linkages)){
     ncMT <- nc_open(file.path(dir.linkages, files.linkages[i]))
-    for(v in 1:length(link.vars)){
-    	linkages[[v]][linkages[[v]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[[v]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- ncvar_get(ncMT, names(linkages)[v])
+    for(v in 1:length(linkages.var)){
+      if(i == 1) temp <- vector() else temp <- linkages.var.list[[v]]
+      if(linkages.var[v] %in% var.diversity[1:3]){
+        temp <- c(temp, colSums(ncvar_get(ncMT, linkages.var[[v]])))
+        #       } else if(linkages.var[v] %in% soil.var[2:3]){
+        #         soil.temp <- t(ncvar_get(ncMT, linkages.var[v]))[,soil.linkages.5]
+        #         for(q in 1:ncol(soil.temp)){
+        #           soil.temp[,q] <- soil.temp[,q]* vol.linkages[soil.linkages.5[q]]/sum(vol.linkages[soil.linkages.5])
+        #         }
+        #         temp <- c(temp, rowSums(soil.temp))
+      } else {      
+        temp <- c(temp, ncvar_get(ncMT, linkages.var[v])) }
+      linkages.var.list[[v]] <- temp
     }
-	# ----------------------
-	# Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
-	# ----------------------
-    # if(i == 1){ evg <- decid <- grass <- vector() 
-    # } else { 
-	  # evg   <- linkages[["Evergreen"]]
-	  # decid <- linkages[["Deciduous"]]
-	  # grass <- linkages[["Grass"]]
-    # }
-    	linkages[["Evergreen"]][linkages[["Evergreen"]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[["Evergreen"]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- sum(ncvar_get(ncMT, "Fcomp")[c(3,6:7)])
-    	linkages[["Deciduous"]][linkages[["Deciduous"]]$Year==as.numeric(substr(files.linkages[i], 1, 4)) | linkages[["Deciduous"]]$Year==as.numeric(substr(files.linkages[i], 1, 4))+1,site.list[s]] <- sum(ncvar_get(ncMT, "Fcomp")[c(1:2, 4:5, 8:9)])
-
-    # linkages[["Evergreen"]] <- c(evg  , sum(ncvar_get(ncMT, "Fcomp")[c(3,6:7),]))
-    # linkages[["Deciduous"]] <- c(decid, sum(ncvar_get(ncMT, "Fcomp")[c(1:2, 4:5, 8:9),]))
-    # linkages[["Grass"    ]] <- c(grass, sum(ncvar_get(ncMT, "Fcomp")[3:4,]))
-    # ----------------------
-    nc_close(ncMT)
+        # ----------------------
+        # Adding in Fraction Evergreen Tree, Deciduous Tree, Grass
+        # ----------------------
+        if(i == 1){ evg <- decid <- grass <- vector() 
+        } else { 
+          evg   <- linkages.var.list[["Evergreen"]]
+          decid <- linkages.var.list[["Deciduous"]]
+          grass <- linkages.var.list[["Grass"]]
+        }
+        
+        linkages.var.list[["Evergreen"]] <- c(evg  , colSums(ncvar_get(ncMT, "Fcomp")[c(4,5,9,14) ,]))
+        linkages.var.list[["Deciduous"]] <- c(decid, colSums(ncvar_get(ncMT, "Fcomp")[c(1:3, 6:8,10:13,15),]))
+        linkages.var.list[["Grass"    ]] <- c(grass, rep(0, length.out=ncol(ncvar_get(ncMT, "Fcomp"))))
+        # ----------------------
+    nc_close(ncMT)      
+  }
+  names(linkages.var.list) <- c(linkages.var, "Evergreen", "Deciduous", "Grass")
+  #-----------------------------------
+  # Adding variable groups to master model list
+  for(v in 1:(length(linkages.var)+3)){
+    if(s == 1){
+      linkages[[v]] <- data.frame(linkages.var.list[[v]]) 
+    } else {
+      linkages[[v]][,s] <- linkages.var.list[[v]]
+    }
   }
 } # Close the model loop
+# Adding site label to each variable
+names(linkages) <- c(linkages.var, "Evergreen", "Deciduous", "Grass")
+for(i in 1:length(linkages)){
+  names(linkages[[i]]) <- site.list
+}
 # -----------------------------------
+
 
 # -----------------------------------
 # SiBCASA
@@ -797,8 +819,6 @@ for(i in 1:length(sib.var)){
   names(sib[[i]]) <- site.list
 }
 # -----------------------------------
-
-
 
 
 # ------------------------------------------------------------------------
@@ -1027,3 +1047,5 @@ names(sib)
 	# plot(ed[["swdown"]][,1], type="l", ylim=range(ed[["swdown"]], na.rm=T), lwd=0.25, main=names(ed[["swdown"]])[i], ylab="Monthly swdown")
 # }
 # dev.off()
+
+
