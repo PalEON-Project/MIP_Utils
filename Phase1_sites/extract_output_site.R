@@ -24,13 +24,17 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
   }
   
   sites.data <- vector()
-  for(s in 1:length(sites)){
+  for(i in 1:length(sites)){
     out.file <- list() # create a new outfile for each site
 
     # In case we have the compressed files or soemthign else in the folder, only grab whatever is the directory
-    dir.site <- dir(model.dir, sites[s])[which(file.info(file.path(model.dir, dir(model.dir, sites[s])))$isdir)]
+    if(model=="LPJ-WSL") {
+      dir.site <- ""
+    } else {
+      dir.site <- dir(model.dir, sites[i])[which(file.info(file.path(model.dir, dir(model.dir, sites[i])))$isdir)]
+    }
     
-    if(length(dir.site)>1){ print(paste0("Site: ", sites[s], " Multiple directories for this site! check your file structures")); next }
+    if(length(dir.site)>1){ print(paste0("Site: ", sites[i], " Multiple directories for this site! check your file structures")); next }
 
     # Note: LPJ-GUESS gives us separate monthly & annual files; we want to loop through the monthly files first to extract what we can
     if(model=="LPJ-GUESS"){
@@ -60,9 +64,10 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
         }
         nc_close(ncT)
       }
+      vars.ann <- unique(vars.ann)
       if(length(vars.ann)>0){
-        for(f in 1:length(files.annual)){
-          ncT <- nc_open(file.path(model.dir, dir.site, files.annual[f]))
+        for(f in 1:length(files.ann)){
+          ncT <- nc_open(file.path(model.dir, dir.site, files.ann[f]))
           for(v in vars.ann){
             # If this variable doesn't have monthly output; save it to check annual
             if(!(v %in% names(ncT$var))) next # if we don't have this variable, just skip over it
@@ -85,10 +90,15 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
       } # End annual loop
     # End LPJ-GUESS Special Case
     } else { 
-      files.site <- dir(file.path(model.dir, dir.site), ".nc")
-      files.site <- files.site[!substr(files.site, nchar(files.site)-3, nchar(files.site))=="var"] # Make sure we don't get the weird linkages files
+      if(model=="LPJ-WSL"){
+        files.site <- dir(file.path(model.dir, dir.site), c(sites[i], ".nc"))  
+      } else {
+        files.site <- dir(file.path(model.dir, dir.site), ".nc")
+      }
+      
+      files.site <- files.site[!substr(files.site, nchar(files.site)-2, nchar(files.site))=="var"] # Make sure we don't get the weird linkages files
     
-      if(!length(files.site)>0){ print(paste0("Site: ", sites[s], " There are no files for this site!")); next }
+      if(!length(files.site)>0){ print(paste0("Site: ", sites[i], " There are no files for this site!")); next }
     
       for(f in 1:length(files.site)){
          ncT <- nc_open(file.path(model.dir, dir.site, files.site[f]))
@@ -100,7 +110,7 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
            var.temp <- ncvar_get(ncT, v)
            # if the years are columns instead of rows, transpose the data frame
            if(length(dim(var.temp))==1) var.temp <- array(var.temp, dim=c(length(var.temp), 1))
-           if(dim(var.temp)[2]>dim(var.temp)[1]) var.temp <- t(var.temp)
+           if(dim(var.temp)[2]>dim(var.temp)[1] | (f==length(files.site) & model.name=="LINKAGES" & v %in% c("Fcomp", "AGB.pft"))) var.temp <- t(var.temp)
            
            if(f==1){ # If this is our first time through for this variable, add the layer to the list
              out.file[[v]] <- var.temp
@@ -114,7 +124,7 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
     } # End getting the data for 1 site
 
     # Bind our sites together if we have multiple sites
-    if(s == 1){
+    if(i == 1){
       for(v in names(out.file)){
         if(ncol(out.file[[v]])>1){
           model.out[[v]] <- array(out.file[[v]], dim=c(dim(out.file[[v]]),1))
@@ -127,7 +137,7 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
         model.out[[v]] <- abind(model.out[[v]], out.file[[v]], along=length(dim(model.out[[v]])))
       }
     } # End binding sites together
-    sites.data <- c(sites.data, sites[s])
+    sites.data <- c(sites.data, sites[i])
   } # End Sites
   
   for(v in names(model.out)){
