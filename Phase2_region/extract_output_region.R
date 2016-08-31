@@ -137,7 +137,7 @@ extract.paleon.site <- function(model, model.dir, vars, xmin=-100, xmax=-60, ymi
       } else {
         # The PFT dims should match the length of PFT names I have
         dim.pft <- which(dims.dat==length(pft.lab) | dims.dat==length(soil))  
-        if(!dim.pft==1) stop("PFT/Soil dimension doesn't line up with our PFT/soils lists.  Stop and clarify (and update function)")
+        if(!length(dim.pft)==1) stop("PFT/Soil dimension doesn't line up with our PFT/soils lists.  Stop and clarify (and update function)")
         
         dim.time <- c(1:length(dims.dat))[!c(1:length(dims.dat)) %in% c(dim.lat, dim.lon, dim.pft)]
       } # End Time dimension define

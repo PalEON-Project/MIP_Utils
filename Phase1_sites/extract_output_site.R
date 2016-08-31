@@ -110,7 +110,7 @@ extract.paleon.site <- function(model, model.dir, sites, vars){
            var.temp <- ncvar_get(ncT, v)
            # if the years are columns instead of rows, transpose the data frame
            if(length(dim(var.temp))==1) var.temp <- array(var.temp, dim=c(length(var.temp), 1))
-           if(dim(var.temp)[2]>dim(var.temp)[1] | (f==length(files.site) & model.name=="LINKAGES" & v %in% c("Fcomp", "AGB.pft"))) var.temp <- t(var.temp)
+           if(dim(var.temp)[2]>dim(var.temp)[1] | (f==length(files.site) & model=="LINKAGES" & v %in% c("Fcomp", "AGB.pft"))) var.temp <- t(var.temp)
            
            if(f==1){ # If this is our first time through for this variable, add the layer to the list
              out.file[[v]] <- var.temp
